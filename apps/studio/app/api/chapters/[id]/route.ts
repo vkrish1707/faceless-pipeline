@@ -18,7 +18,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Merge with next?
   if (body.mergeWithNext === true) {
-    const me = await db.chapter.findUniqueOrThrow({ where: { id } });
+    const me = await db.chapter.findUnique({ where: { id } });
+    if (!me) return NextResponse.json({ error: "chapter not found" }, { status: 404 });
     const next = await db.chapter.findFirst({
       where: { bookId: me.bookId, orderIndex: { gt: me.orderIndex } },
       orderBy: { orderIndex: "asc" },
@@ -52,7 +53,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const me = await db.chapter.findUniqueOrThrow({ where: { id } });
+  const me = await db.chapter.findUnique({ where: { id } });
+  if (!me) return NextResponse.json({ error: "chapter not found" }, { status: 404 });
   await db.$transaction(async (tx) => {
     await tx.idea.deleteMany({ where: { chapterId: id } });
     await tx.chapter.delete({ where: { id } });

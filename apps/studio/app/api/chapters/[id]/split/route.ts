@@ -6,14 +6,15 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { atOffset, newTitle } = (await req.json()) as { atOffset: number; newTitle: string };
-  if (typeof atOffset !== "number" || atOffset < 1) {
-    return NextResponse.json({ error: "atOffset must be a positive number" }, { status: 400 });
+  if (!Number.isInteger(atOffset) || atOffset < 1) {
+    return NextResponse.json({ error: "atOffset must be a positive integer" }, { status: 400 });
   }
   if (typeof newTitle !== "string" || !newTitle.trim()) {
     return NextResponse.json({ error: "newTitle required" }, { status: 400 });
   }
 
-  const me = await db.chapter.findUniqueOrThrow({ where: { id } });
+  const me = await db.chapter.findUnique({ where: { id } });
+  if (!me) return NextResponse.json({ error: "chapter not found" }, { status: 404 });
   if (atOffset >= me.rawText.length) {
     return NextResponse.json({ error: "atOffset past end of chapter" }, { status: 400 });
   }
