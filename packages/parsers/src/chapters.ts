@@ -13,31 +13,14 @@ export class NoChaptersDetectedError extends Error {
   }
 }
 
-const HEADING_REGEX = /^(chapter\s+\d+|ch\.\s*\d+|part\s+\d+|[ivx]{1,5}\.?)(\s|$)/i;
+const HEADING_REGEX = /^(chapter\s+\d+|ch\.\s*\d+|part\s+\d+|[ivx]{1,5}\.)(\s|$)/i;
 const MIN_TOTAL_WORDS = 1000;
 const DEFAULT_MIN_BLOCK_WORDS = 4000;
 
-type RawMatch = { pageIndex: number; lineIndex: number; title: string };
+type RawMatch = { pageIndex: number; title: string };
 
-function joinPagesWithMarkers(pages: string[]): { text: string; pageStarts: number[] } {
-  const pageStarts: number[] = [];
-  let text = "";
-  for (let i = 0; i < pages.length; i++) {
-    pageStarts.push(text.length);
-    text += pages[i] + "\n\n";
-  }
-  return { text, pageStarts };
-}
-
-function offsetToPage(offset: number, pageStarts: number[]): number {
-  for (let i = pageStarts.length - 1; i >= 0; i--) {
-    if (offset >= pageStarts[i]!) return i;
-  }
-  return 0;
-}
-
-function wordCount(s: string): number {
-  return s.trim().split(/\s+/).filter(Boolean).length;
+function joinPages(pages: string[]): string {
+  return pages.map((p) => p + "\n\n").join("");
 }
 
 function tryRegexHeadings(pages: string[]): Chapter[] | null {
@@ -65,23 +48,27 @@ function tryRegexHeadings(pages: string[]): Chapter[] | null {
             }
           }
         }
-        matches.push({ pageIndex: p, lineIndex: l, title });
+        matches.push({ pageIndex: p, title });
       }
     }
   }
   if (matches.length < 2) return null;
-  return buildChaptersFromMatches(pages, matches);
+  const result = buildChaptersFromMatches(pages, matches);
+  return result.length >= 2 ? result : null;
 }
 
 function buildChaptersFromMatches(pages: string[], matches: RawMatch[]): Chapter[] {
   // Drop TOC-style repeats: if a title appears at <5% of total pages AND again later, drop the early one.
   const pageCount = pages.length;
-  const earlyCutoff = Math.max(1, Math.floor(pageCount * 0.05));
+  const earlyCutoff = Math.max(2, Math.ceil(pageCount * 0.05));
   const seenTitles = new Map<string, number>(); // normalized title -> first idx in matches
   const dropIndices = new Set<number>();
   for (let i = 0; i < matches.length; i++) {
     const key = matches[i]!.title.toLowerCase();
     if (matches[i]!.pageIndex < earlyCutoff) {
+      if (seenTitles.has(key)) {
+        dropIndices.add(seenTitles.get(key)!);
+      }
       seenTitles.set(key, i);
     } else if (seenTitles.has(key)) {
       dropIndices.add(seenTitles.get(key)!);
@@ -95,7 +82,7 @@ function buildChaptersFromMatches(pages: string[], matches: RawMatch[]): Chapter
     const start = kept[i]!;
     const end = kept[i + 1];
     const startPage = start.pageIndex;
-    const endPage = end ? end.pageIndex : pages.length - 1;
+    const endPage = end ? Math.max(startPage, end.pageIndex - 1) : pages.length - 1;
     let rawText: string;
     if (!end) {
       rawText = pages.slice(startPage, endPage + 1).join("\n\n");
@@ -130,17 +117,16 @@ function tryTypographyHeadings(pages: string[]): Chapter[] | null {
       const isTitleCase = words.every((w) => /^[A-Z]/.test(w) || /^(of|the|and|a|an|in|on|to|for|with)$/i.test(w));
       const isAllCaps = line === line.toUpperCase() && /[A-Z]/.test(line);
       if (!isTitleCase && !isAllCaps) continue;
-      // crude: locate the line within the page
-      const lineIndex = pages[p]!.indexOf(line);
-      matches.push({ pageIndex: p, lineIndex, title: line });
+      matches.push({ pageIndex: p, title: line });
     }
   }
   if (matches.length < 2) return null;
-  return buildChaptersFromMatches(pages, matches);
+  const result = buildChaptersFromMatches(pages, matches);
+  return result.length >= 2 ? result : null;
 }
 
 function wordBlockFallback(pages: string[], minBlockWords: number): Chapter[] {
-  const { text } = joinPagesWithMarkers(pages);
+  const text = joinPages(pages);
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length < MIN_TOTAL_WORDS) {
     throw new NoChaptersDetectedError(`Document too small: ${words.length} words (need ${MIN_TOTAL_WORDS}).`);
