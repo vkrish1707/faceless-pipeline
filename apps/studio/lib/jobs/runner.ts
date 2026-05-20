@@ -45,7 +45,7 @@ export async function runJob(jobId: string): Promise<void> {
     });
     await db.job.update({
       where: { id: jobId },
-      data: { status: "completed", progress: 100, completedAt: new Date(), result: result as object | null },
+      data: { status: "completed", progress: 100, completedAt: new Date(), result: result ?? undefined },
     });
   } catch (err) {
     const message = err instanceof Error ? (err.stack ?? err.message) : String(err);

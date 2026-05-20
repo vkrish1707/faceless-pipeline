@@ -35,7 +35,7 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdf> {
     let lastY: number | null = null;
     let out = "";
     for (const item of tc.items) {
-      const y = item.transform[5];
+      const y = item.transform[5] ?? 0;
       if (lastY !== null && Math.abs(y - lastY) > 2) out += "\n";
       out += item.str + " ";
       lastY = y;

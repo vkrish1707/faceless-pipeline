@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@studio/parsers": "workspace:*",
     "@studio/pipeline": "workspace:*",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
