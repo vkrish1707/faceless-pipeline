@@ -79,3 +79,41 @@ export type SplitSuggestion = z.infer<typeof SplitSchema>;
 export type DropSuggestion = z.infer<typeof DropSchema>;
 export type SeriesSuggestion = z.infer<typeof SeriesSchema>;
 export type ReframeSuggestion = z.infer<typeof ReframeSchema>;
+
+export const ChartSpecSchema = z.object({
+  kind: z.enum(["stat", "bar", "line"]),
+  label: z.string().min(1).max(80),
+  data: z.array(z.number()).max(8).optional(),
+  bigNumber: z.string().max(20).optional(),
+});
+
+export const BeatSchema = z
+  .object({
+    start: z.number().min(0),
+    end: z.number().min(0),
+    keywords: z.array(z.string().min(1)).min(1).max(5),
+    mediaType: z.enum(["photo", "video"]),
+    tone: z.enum(["urgent", "explainer", "payoff"]),
+    chart: ChartSpecSchema.optional(),
+  })
+  .refine((b) => b.end > b.start, { message: "beat end must be > start" });
+
+export const MetadataSchema = z.object({
+  youtubeTitle: z.string().min(5).max(60),
+  caption: z.string().min(10).max(280),
+  hashtags: z.array(z.string().regex(/^#[a-zA-Z0-9_]+$/)).min(1).max(8),
+  thumbnailConcept: z.string().min(10).max(200),
+});
+
+export const ScriptSchema = z.object({
+  hook: z.string().min(5).max(180),
+  body: z.string().min(50).max(800),
+  cta: z.string().min(5).max(120),
+  visualBeats: z.array(BeatSchema).min(2),
+  metadata: MetadataSchema,
+});
+
+export type ChartSpec = z.infer<typeof ChartSpecSchema>;
+export type Beat = z.infer<typeof BeatSchema>;
+export type ScriptMetadata = z.infer<typeof MetadataSchema>;
+export type ScriptOutput = z.infer<typeof ScriptSchema>;

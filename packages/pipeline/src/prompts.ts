@@ -82,3 +82,64 @@ Reply with VALID JSON ONLY matching this exact schema:
 }
 
 Do not include any prose outside the JSON object.`;
+
+export const SCRIPT_SYSTEM_PROMPT = `You write punchy, faceless short-form video scripts for finance and personal-development content.
+
+Given one approved idea and the chapter context it came from, write a complete script PLUS a visual beat plan PLUS platform metadata.
+
+The script has THREE text parts:
+- hook (first 3 seconds): pattern interrupt or stakes line. NEVER a question. 5-180 chars.
+- body: the main payoff. Target word count is roughly 2.5 × targetLengthSec. 50-800 chars.
+- cta: the final 2 seconds. Soft direction (e.g., "save this for later"). 5-120 chars.
+
+visualBeats tile the entire timeline from 0 to targetLengthSec edge-to-edge:
+- Every second must be covered by exactly one beat. Beats MUST NOT overlap.
+- Each beat has: start, end (numbers in seconds), keywords (1-5 short b-roll search terms), mediaType ("photo" | "video"), tone ("urgent" | "explainer" | "payoff").
+- Optional chart: { kind: "stat" | "bar" | "line", label, data?, bigNumber? } if the beat needs a number on screen.
+
+metadata is platform-ready:
+- youtubeTitle (5-60 chars)
+- caption (10-280 chars)
+- hashtags: array of 1-8 lowercase tags each matching /^#[a-zA-Z0-9_]+$/
+- thumbnailConcept (10-200 chars)
+
+Reply with VALID JSON ONLY matching this schema:
+
+{
+  "hook": string,
+  "body": string,
+  "cta": string,
+  "visualBeats": [ { "start": number, "end": number, "keywords": [string], "mediaType": "photo"|"video", "tone": "urgent"|"explainer"|"payoff", "chart"?: {...} } ],
+  "metadata": { "youtubeTitle": string, "caption": string, "hashtags": [string], "thumbnailConcept": string }
+}
+
+Do not include any prose outside the JSON object.`;
+
+export const NICHE_STYLE_GUIDE: Record<string, string> = {
+  investing: `Style: cool, numbers-first, deadpan. Avoid hype words. Favor concrete dollar amounts, percentages, time horizons. Frame everything from the viewer's perspective.`,
+  personal_finance: `Style: warm, specific, never preachy. Real numbers, no jargon. Speak to a 25-year-old earning $60k.`,
+  productivity: `Style: counterintuitive insight + one tactic. Skip the manifesto.`,
+};
+
+export function styleGuideFor(niche: string | null | undefined): string {
+  if (!niche) return NICHE_STYLE_GUIDE.investing!;
+  return NICHE_STYLE_GUIDE[niche] ?? NICHE_STYLE_GUIDE.investing!;
+}
+
+export const RESCORE_SYSTEM_PROMPT = `You re-score a SHORT-FORM VIDEO SCRIPT (post-edit) on the same 5-component rubric as raw ideas.
+
+Reply with VALID JSON ONLY:
+{
+  "score": <int 0-100>,
+  "breakdown": {
+    "hook_strength": <int 0-25>,
+    "specificity": <int 0-20>,
+    "trend_alignment": <int 0-25>,
+    "format_fit": <int 0-15>,
+    "shelf_life": <int 0-15>
+  },
+  "reasoning": "<1-2 sentences>",
+  "flags": ["<short flag>", ...]
+}
+
+CRITICAL: score = sum of breakdown components (±1 rounding tolerance).`;
