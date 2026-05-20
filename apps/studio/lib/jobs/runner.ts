@@ -4,7 +4,11 @@ import type { JobHandler, JobType } from "./types";
 const handlers = new Map<JobType, JobHandler>();
 
 export function registerHandler<P, R>(type: JobType, handler: JobHandler<P, R>): void {
-  handlers.set(type, handler as JobHandler);
+  handlers.set(type, handler as JobHandler); // generic param erasure — Map is homogeneous
+}
+
+export function _resetHandlers(): void {
+  handlers.clear();
 }
 
 export async function recoverOrphans(): Promise<number> {
@@ -17,6 +21,7 @@ export async function recoverOrphans(): Promise<number> {
 
 export async function runJob(jobId: string): Promise<void> {
   const job = await db.job.findUniqueOrThrow({ where: { id: jobId } });
+  if (job.status !== "queued") return;
   const handler = handlers.get(job.type as JobType);
   if (!handler) {
     await db.job.update({
@@ -43,7 +48,7 @@ export async function runJob(jobId: string): Promise<void> {
       data: { status: "completed", progress: 100, completedAt: new Date(), result: result as object | null },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
+    const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
     await db.job.update({
       where: { id: jobId },
       data: { status: "failed", error: message, completedAt: new Date() },

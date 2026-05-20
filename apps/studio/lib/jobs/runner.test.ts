@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { db } from "../db";
-import { recoverOrphans, runJob, registerHandler } from "./runner";
+import { recoverOrphans, runJob, registerHandler, _resetHandlers } from "./runner";
 
 describe("job runner", () => {
   beforeEach(async () => {
+    _resetHandlers();
     await db.job.deleteMany();
   });
 
