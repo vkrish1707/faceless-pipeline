@@ -1,13 +1,12 @@
+// Permissive shape so this helper works against both the real PrismaClient
+// (whose Json types are not unknown but a complex InputJsonValue union) and
+// the small test doubles we use in unit tests.
 export type CacheClient = {
   trendSnapshot: {
-    findUnique(args: {
-      where: { keyword_source: { keyword: string; source: string } };
-    }): Promise<{ data: unknown; fetchedAt: Date } | null>;
-    upsert(args: {
-      where: { keyword_source: { keyword: string; source: string } };
-      update: { data: unknown; fetchedAt: Date };
-      create: { keyword: string; source: string; data: unknown; fetchedAt: Date };
-    }): Promise<unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    findUnique: (args: any) => Promise<{ data: unknown; fetchedAt: Date } | null>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    upsert: (args: any) => Promise<unknown>;
   };
 };
 

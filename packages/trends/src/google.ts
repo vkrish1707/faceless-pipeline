@@ -1,3 +1,4 @@
+/// <reference path="./google-trends-api.d.ts" />
 import googleTrendsApi from "google-trends-api";
 import type { GoogleTrendsData, TrendPoint } from "./types";
 
