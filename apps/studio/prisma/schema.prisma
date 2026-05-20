@@ -51,17 +51,22 @@ model Idea {
 }
 
 model Script {
-  id          String  @id @default(cuid())
-  ideaId      String  @unique
-  idea        Idea    @relation(fields: [ideaId], references: [id])
-  hook        String
-  body        String
-  cta         String
-  visualBeats Json
-  metadata    Json
-  score       Int?
-  status      String
-  render      Render?
+  id           String    @id @default(cuid())
+  ideaId       String    @unique
+  idea         Idea      @relation(fields: [ideaId], references: [id])
+  hook         String
+  body         String
+  cta          String
+  visualBeats  Json
+  metadata     Json
+  score        Int?
+  scoreBreakdown Json?
+  status       String
+  warnings     Json?
+  approvedAt   DateTime?
+  generatedAt  DateTime?
+  lastEditedAt DateTime?
+  render       Render?
 }
 
 model Asset {
