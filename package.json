@@ -14,6 +14,7 @@
     "smoke:whisper": "pnpm tsx scripts/smoke/whisper-hello.ts",
     "smoke:remotion": "pnpm tsx scripts/smoke/remotion-hello.ts",
     "smoke:phase1": "pnpm tsx scripts/smoke/phase1-hello.ts",
+    "smoke:phase2": "pnpm tsx scripts/smoke/phase2-hello.ts",
     "smoke:all": "pnpm smoke:claude && pnpm smoke:pexels && pnpm smoke:piper && pnpm smoke:whisper && pnpm smoke:remotion",
     "setup:piper": "bash scripts/setup/install-piper.sh",
     "setup:whisper": "bash scripts/setup/install-whisper.sh",
