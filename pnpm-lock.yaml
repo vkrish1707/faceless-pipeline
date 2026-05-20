@@ -48,6 +48,9 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@18.3.29)(react@18.3.1)
+      '@studio/pipeline':
+        specifier: workspace:*
+        version: link:../../packages/pipeline
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
