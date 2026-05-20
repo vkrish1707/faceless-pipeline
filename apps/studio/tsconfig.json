@@ -1,0 +1,47 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@pipeline/*": [
+        "../../packages/pipeline/src/*"
+      ],
+      "@parsers/*": [
+        "../../packages/parsers/src/*"
+      ],
+      "@trends/*": [
+        "../../packages/trends/src/*"
+      ],
+      "@tts/*": [
+        "../../packages/tts/src/*"
+      ],
+      "@captions/*": [
+        "../../packages/captions/src/*"
+      ],
+      "@assets-pkg/*": [
+        "../../packages/assets/src/*"
+      ],
+      "@remotion-pkg/*": [
+        "../../packages/remotion/src/*"
+      ]
+    },
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
