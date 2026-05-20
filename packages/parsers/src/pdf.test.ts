@@ -4,13 +4,17 @@ import { makeFixturePdf } from "./fixtures";
 
 describe("parsePdf", () => {
   it("returns page count and per-page text in order", async () => {
-    const buf = await makeFixturePdf(["Hello page one", "Page two body", "Final third page"]);
+    const buf = await makeFixturePdf([
+      "Hello page one UNIQUE_ALPHA",
+      "Page two body UNIQUE_BETA",
+      "Final third page UNIQUE_GAMMA",
+    ]);
     const result = await parsePdf(buf);
     expect(result.pageCount).toBe(3);
     expect(result.pages).toHaveLength(3);
-    expect(result.pages[0]).toContain("Hello page one");
-    expect(result.pages[1]).toContain("Page two body");
-    expect(result.pages[2]).toContain("Final third page");
+    expect(result.pages[0]).toContain("UNIQUE_ALPHA");
+    expect(result.pages[1]).toContain("UNIQUE_BETA");
+    expect(result.pages[2]).toContain("UNIQUE_GAMMA");
   });
 
   it("throws PdfParseError on non-PDF input", async () => {

@@ -21,7 +21,11 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdf> {
 
   // pagerender lets us capture per-page text instead of one concatenated string.
   // The function receives a pdfjs PageProxy and should return a Promise<string>.
+  // We index by pageIndex (0-based) rather than pushing so that concurrent renders
+  // do not reorder pages based on resolution order.
   const pagerender = async (pageData: {
+    pageIndex: number;
+    pageNumber: number;
     getTextContent: (opts: { normalizeWhitespace: boolean }) => Promise<{
       items: Array<{ str: string; transform: number[] }>;
     }>;
@@ -36,7 +40,9 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdf> {
       out += item.str + " ";
       lastY = y;
     }
-    pages.push(out.trim());
+    // Use pageIndex (0-based) if available; fall back to pageNumber - 1.
+    const idx = pageData.pageIndex !== undefined ? pageData.pageIndex : pageData.pageNumber - 1;
+    pages[idx] = out.trim();
     return out;
   };
 
