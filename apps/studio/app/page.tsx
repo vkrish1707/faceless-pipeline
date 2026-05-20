@@ -1,8 +1,10 @@
+import { Button } from "@/components/ui/button";
+
 export default function HomePage() {
   return (
-    <main className="p-8">
+    <main className="p-8 space-y-4">
       <h1 className="text-3xl font-bold">Faceless Pipeline</h1>
-      <p className="mt-2 text-white/70">System status will appear here.</p>
+      <Button>Test button</Button>
     </main>
   );
 }
