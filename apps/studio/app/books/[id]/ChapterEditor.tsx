@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export function ChapterEditor({ bookId, initialChapters }: { bookId: string; ini
   const [editValue, setEditValue] = useState("");
   const [splittingId, setSplittingId] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Record<string, JobInfo>>({}); // chapterId -> latest job
+  const cancelEditRef = useRef(false);
 
   // Refresh state from server (after mutations).
   const refresh = useCallback(() => router.refresh(), [router]);
@@ -88,6 +89,11 @@ export function ChapterEditor({ bookId, initialChapters }: { bookId: string; ini
   }
 
   async function saveTitle(c: ChapterRow) {
+    if (cancelEditRef.current) {
+      cancelEditRef.current = false;
+      setEditingId(null);
+      return;
+    }
     if (editValue.trim() && editValue !== c.title) {
       await fetch(`/api/chapters/${c.id}`, {
         method: "PATCH",
@@ -154,7 +160,10 @@ export function ChapterEditor({ bookId, initialChapters }: { bookId: string; ini
                           onBlur={() => saveTitle(c)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") saveTitle(c);
-                            if (e.key === "Escape") setEditingId(null);
+                            if (e.key === "Escape") {
+                              cancelEditRef.current = true;
+                              setEditingId(null);
+                            }
                           }}
                           className="flex-1 rounded border border-border bg-background px-2 py-1 text-sm"
                         />
