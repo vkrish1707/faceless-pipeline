@@ -13,6 +13,7 @@ data/*.db-journal
 uploads/
 output/
 assets/cache/
+assets/pdfs/
 assets/thumbs/
 assets/voices/*.onnx
 assets/voices/*.onnx.json
