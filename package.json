@@ -1,0 +1,26 @@
+{
+  "name": "faceless-pipeline",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm --filter @studio/app dev",
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke:claude": "pnpm tsx scripts/smoke/claude-hello.ts",
+    "smoke:pexels": "pnpm tsx scripts/smoke/pexels-hello.ts",
+    "smoke:piper": "pnpm tsx scripts/smoke/piper-hello.ts",
+    "smoke:whisper": "pnpm tsx scripts/smoke/whisper-hello.ts",
+    "smoke:remotion": "pnpm tsx scripts/smoke/remotion-hello.ts",
+    "smoke:all": "pnpm smoke:claude && pnpm smoke:pexels && pnpm smoke:piper && pnpm smoke:whisper && pnpm smoke:remotion",
+    "setup:piper": "bash scripts/setup/install-piper.sh",
+    "setup:whisper": "bash scripts/setup/install-whisper.sh"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "@types/node": "^22.0.0"
+  }
+}

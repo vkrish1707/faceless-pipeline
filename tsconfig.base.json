@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "paths": {
+      "@pipeline/*": ["./packages/pipeline/src/*"],
+      "@parsers/*": ["./packages/parsers/src/*"],
+      "@trends/*": ["./packages/trends/src/*"],
+      "@tts/*": ["./packages/tts/src/*"],
+      "@captions/*": ["./packages/captions/src/*"],
+      "@assets-pkg/*": ["./packages/assets/src/*"],
+      "@remotion-pkg/*": ["./packages/remotion/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next"]
+}
