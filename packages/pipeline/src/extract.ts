@@ -67,9 +67,12 @@ export async function extractIdeas(opts: ExtractOpts): Promise<ExtractResult> {
         .map((b) => b.text)
         .join("");
 
+      // Strip markdown code fences if the model wraps its JSON output
+      const stripped = text.replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/s, "$1").trim();
+
       let parsed: unknown;
       try {
-        parsed = JSON.parse(text);
+        parsed = JSON.parse(stripped);
       } catch {
         throw new NonRetryableError(`Claude returned invalid JSON: ${text.slice(0, 200)}`);
       }
