@@ -9,7 +9,7 @@ export const IdeaSchema = z.object({
 });
 
 export const ExtractResponseSchema = z.object({
-  ideas: z.array(IdeaSchema).min(1).max(10),
+  ideas: z.array(IdeaSchema).min(1).max(8),
 });
 
 export type ExtractedIdea = z.infer<typeof IdeaSchema>;

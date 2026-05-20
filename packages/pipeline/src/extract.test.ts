@@ -76,20 +76,38 @@ describe("extractIdeas", () => {
     ).rejects.toThrow();
   });
 
-  it("throws on malformed JSON in Claude response", async () => {
-    mockSdk([
+  it("throws NonRetryableError on malformed JSON without retrying", async () => {
+    const createMock = mockSdk([
       {
         body: {
           content: [{ type: "text", text: "not json at all" }],
           usage: { input_tokens: 100, output_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
         },
       },
-      { body: { content: [{ type: "text", text: "still not json" }], usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } },
-      { body: { content: [{ type: "text", text: "nope" }], usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } },
     ]);
     const { extractIdeas } = await import("./extract");
     await expect(
       extractIdeas({ chapterText: "a".repeat(2000), apiKey: "test-key" })
-    ).rejects.toThrow();
+    ).rejects.toThrow(/invalid JSON/i);
+    expect(createMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws NonRetryableError on schema validation failure without retrying", async () => {
+    const createMock = mockSdk([
+      {
+        body: {
+          content: [{
+            type: "text",
+            text: JSON.stringify({ ideas: [{ title: "x" }] }), // missing required fields
+          }],
+          usage: { input_tokens: 100, output_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+        },
+      },
+    ]);
+    const { extractIdeas } = await import("./extract");
+    await expect(
+      extractIdeas({ chapterText: "a".repeat(2000), apiKey: "test-key" })
+    ).rejects.toThrow(/schema validation/i);
+    expect(createMock).toHaveBeenCalledTimes(1);
   });
 });
