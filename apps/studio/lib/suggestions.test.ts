@@ -9,6 +9,8 @@ describe("applySuggestion", () => {
 
   beforeEach(async () => {
     await db.suggestion.deleteMany();
+    await db.render.deleteMany();
+    await db.script.deleteMany();
     await db.idea.deleteMany();
     await db.chapter.deleteMany();
     await db.book.deleteMany();

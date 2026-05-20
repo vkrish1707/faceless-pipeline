@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { IdeaCard } from "./IdeaCard";
 import { ScoreButton } from "./ScoreButton";
 import { SuggestionStrip, type SuggestionRow } from "./SuggestionStrip";
+import { IdeaGrid, type IdeaRow } from "./IdeaGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +54,23 @@ export default async function ChapterIdeasPage({ params }: { params: Promise<{ i
   });
 
   const hasScores = sortedIdeas.some((i) => i.score != null);
+  const hasScripted = sortedIdeas.some((i) => i.status === "scripted");
+
+  const ideaRows: IdeaRow[] = sortedIdeas.map((idea) => {
+    const trendSignals = idea.trendSignals as { error?: string | null } | null;
+    return {
+      id: idea.id,
+      title: idea.title,
+      summary: idea.summary,
+      targetLengthSec: idea.targetLengthSec,
+      sourceQuotes: (idea.sourceQuotes as string[] | null) ?? [],
+      candidateHooks: (idea.candidateHooks as string[] | null) ?? [],
+      score: idea.score,
+      breakdown: (idea.scoreBreakdown as IdeaBreakdown | null) ?? null,
+      trendsPartial: trendSignals?.error === "partial",
+      status: idea.status,
+    };
+  });
 
   return (
     <main className="max-w-5xl mx-auto p-8 space-y-6">
@@ -66,34 +83,20 @@ export default async function ChapterIdeasPage({ params }: { params: Promise<{ i
               pp. {chapter.startPage + 1}–{chapter.endPage + 1} · {chapter.ideas.length} ideas
             </p>
           </div>
-          <ScoreButton chapterId={chapter.id} ideaCount={chapter.ideas.length} hasScores={hasScores} />
+          <div className="flex items-center gap-3">
+            {hasScripted && (
+              <Link href={`/books/${id}/chapters/${cid}/scripts`} className="text-sm underline">
+                View scripts →
+              </Link>
+            )}
+            <ScoreButton chapterId={chapter.id} ideaCount={chapter.ideas.length} hasScores={hasScores} />
+          </div>
         </div>
       </header>
 
       <SuggestionStrip suggestions={suggestionRows} />
 
-      {sortedIdeas.length === 0 ? (
-        <p className="text-muted-foreground">No ideas yet. Click &quot;Extract ideas&quot; on the chapter list.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sortedIdeas.map((idea) => {
-            const trendSignals = idea.trendSignals as { error?: string | null } | null;
-            return (
-              <IdeaCard
-                key={idea.id}
-                title={idea.title}
-                summary={idea.summary}
-                targetLengthSec={idea.targetLengthSec}
-                sourceQuotes={(idea.sourceQuotes as string[] | null) ?? []}
-                candidateHooks={(idea.candidateHooks as string[] | null) ?? []}
-                score={idea.score}
-                breakdown={(idea.scoreBreakdown as IdeaBreakdown | null) ?? null}
-                trendsPartial={trendSignals?.error === "partial"}
-              />
-            );
-          })}
-        </div>
-      )}
+      <IdeaGrid bookId={id} chapterId={cid} ideas={ideaRows} hasScores={hasScores} />
     </main>
   );
 }
