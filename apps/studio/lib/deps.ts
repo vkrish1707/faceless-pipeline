@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { promises as fs } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, promises as fs } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 export type DepCheck = { name: string; ok: boolean; path?: string; detail?: string };
 
@@ -35,8 +35,17 @@ export function summarize<T extends { ok: boolean }>(checks: ReadonlyArray<T>): 
   return checks.every((c) => c.ok) ? "ok" : "degraded";
 }
 
+function findWorkspaceRoot(start: string = process.cwd()): string {
+  let dir = start;
+  while (dir !== "/") {
+    if (existsSync(resolve(dir, "pnpm-workspace.yaml"))) return dir;
+    dir = dirname(dir);
+  }
+  return start;
+}
+
 export async function runAllChecks(env: NodeJS.ProcessEnv): Promise<{ status: "ok" | "degraded"; checks: DepCheck[] }> {
-  const root = process.cwd();
+  const root = findWorkspaceRoot();
   const checks = await Promise.all([
     checkEnv("ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY", env),
     checkEnv("PEXELS_API_KEY", "PEXELS_API_KEY", env),
