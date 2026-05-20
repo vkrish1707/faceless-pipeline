@@ -19,6 +19,9 @@ export type IdeaCardProps = {
     shelf_life: number;
   } | null;
   trendsPartial: boolean;
+  approvable?: boolean;
+  approved?: boolean;
+  onToggleApprove?: () => void;
 };
 
 export function IdeaCard({
@@ -30,6 +33,9 @@ export function IdeaCard({
   score,
   breakdown,
   trendsPartial,
+  approvable = false,
+  approved = false,
+  onToggleApprove,
 }: IdeaCardProps) {
   const [showQuotes, setShowQuotes] = useState(false);
   const [showHooks, setShowHooks] = useState(false);
@@ -38,9 +44,21 @@ export function IdeaCard({
   const scoreVariant = score == null ? "outline" : score >= 80 ? "success" : score >= 60 ? "warn" : "outline";
 
   return (
-    <Card>
+    <Card className={approved ? "ring-2 ring-green-500/50" : ""}>
       <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <CardTitle className="text-base leading-snug">{title}</CardTitle>
+        <div className="flex items-start gap-3 min-w-0">
+          {approvable && (
+            <label className="flex items-center gap-1 mt-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={approved}
+                onChange={onToggleApprove}
+                className="h-4 w-4 rounded border-border accent-green-500"
+              />
+            </label>
+          )}
+          <CardTitle className="text-base leading-snug">{title}</CardTitle>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {trendsPartial && (
             <span
