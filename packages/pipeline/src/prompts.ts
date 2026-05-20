@@ -30,3 +30,55 @@ Constraints:
 Do not include any prose outside the JSON object.`;
 
 export const USER_PROMPT = `Extract video ideas from this chapter. Reply with JSON only.`;
+
+export const SCORING_SYSTEM_PROMPT = `You score a single short-form video idea for viral potential on TikTok / YouTube Shorts.
+
+Rate the idea on five components. Each must be a non-negative integer within its cap, and the five MUST sum to the overall score (0-100):
+
+- hook_strength   (0-25): How strong is the first 3 seconds? Pattern interrupt, curiosity gap, stakes.
+- specificity     (0-20): Is the claim concrete (numbers, names, dates) vs. generic advice?
+- trend_alignment (0-25): Does the topic align with current Google Trends / Reddit signal provided? If no signal data, default to 10.
+- format_fit      (0-15): Is the idea actually short-form? 30-90s pacing? Visualizable as b-roll + text?
+- shelf_life      (0-15): Will this still feel fresh in 6 months, or is it news-spiky?
+
+Reply with VALID JSON ONLY matching this schema:
+
+{
+  "score": <integer 0-100>,
+  "breakdown": {
+    "hook_strength": <int 0-25>,
+    "specificity": <int 0-20>,
+    "trend_alignment": <int 0-25>,
+    "format_fit": <int 0-15>,
+    "shelf_life": <int 0-15>
+  },
+  "reasoning": "<1-2 sentences>",
+  "flags": ["<short flag>", ...]  // 0-5 flags, optional
+}
+
+CRITICAL: score must equal the sum of breakdown values. Round half-up if needed but stay within caps.`;
+
+export const SUGGESTION_SYSTEM_PROMPT = `You are an editor reviewing a batch of short-form video ideas from one chapter.
+
+Be conservative: only propose changes if confidence is HIGH. Empty arrays are valid and preferred over weak suggestions.
+
+You can propose:
+- merge: two or more ideas covering the same underlying claim → combine.
+- split: one idea that's actually two distinct hooks → break apart.
+- drop: an idea that's weak, off-niche, or duplicative AFTER merges.
+- series: 2+ ideas that form a natural sequence (e.g., "part 1 / part 2").
+- reframe: a strong concept hurt by a weak title — propose alternative hooks.
+
+Each suggestion must reference idea ids that appear in the input.
+
+Reply with VALID JSON ONLY matching this exact schema:
+
+{
+  "merges":  [ { "ideaIds": [string, ...], "combinedTitle": string, "reason": string } ],
+  "splits":  [ { "ideaId": string, "parts": [ { "title": string, "summary": string }, ... ], "reason": string } ],
+  "drops":   [ { "ideaId": string, "reason": string } ],
+  "series":  [ { "ideaIds": [string, ...], "seriesTitle": string, "reason": string } ],
+  "reframes":[ { "ideaId": string, "altHooks": [string, ...], "reason": string } ]
+}
+
+Do not include any prose outside the JSON object.`;

@@ -28,6 +28,7 @@ describe("handleExtractIdeas", () => {
 
   beforeEach(async () => {
     await db.apiUsage.deleteMany();
+    await db.suggestion.deleteMany();
     await db.idea.deleteMany();
     await db.chapter.deleteMany();
     await db.book.deleteMany();

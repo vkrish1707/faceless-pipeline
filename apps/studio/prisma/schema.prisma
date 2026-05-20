@@ -19,16 +19,17 @@ model Book {
 }
 
 model Chapter {
-  id         String  @id @default(cuid())
-  bookId     String
-  book       Book    @relation(fields: [bookId], references: [id])
-  title      String
-  orderIndex Int
-  startPage  Int
-  endPage    Int
-  rawText    String
-  status     String
-  ideas      Idea[]
+  id          String       @id @default(cuid())
+  bookId      String
+  book        Book         @relation(fields: [bookId], references: [id])
+  title       String
+  orderIndex  Int
+  startPage   Int
+  endPage     Int
+  rawText     String
+  status      String
+  ideas       Idea[]
+  suggestions Suggestion[]
 }
 
 model Idea {
@@ -89,6 +90,20 @@ model Render {
   error        String?
   startedAt    DateTime?
   completedAt  DateTime?
+}
+
+model Suggestion {
+  id         String    @id @default(cuid())
+  chapterId  String
+  chapter    Chapter   @relation(fields: [chapterId], references: [id])
+  kind       String
+  payload    Json
+  reason     String
+  status     String
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([chapterId, status])
 }
 
 model TrendSnapshot {

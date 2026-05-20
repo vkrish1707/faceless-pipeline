@@ -1,4 +1,4 @@
-export type JobType = "extract_ideas";
+export type JobType = "extract_ideas" | "score_chapter";
 
 export type JobStatus = "queued" | "running" | "completed" | "failed";
 
