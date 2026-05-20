@@ -45,6 +45,8 @@ export const handleExtractIdeas: JobHandler<ExtractIdeasPayload, ExtractIdeasRes
         endpoint: "messages.create",
         tokensIn: usage.inputTokens,
         tokensOut: usage.outputTokens,
+        cacheTokensRead: usage.cacheReadTokens,
+        cacheTokensCreated: usage.cacheCreationTokens,
         traceId: ctx.jobId,
       },
     });

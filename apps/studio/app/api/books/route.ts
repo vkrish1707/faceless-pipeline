@@ -19,6 +19,10 @@ export async function POST(req: Request) {
   if (file.size > MAX_SIZE_BYTES) return NextResponse.json({ error: "file exceeds 50MB" }, { status: 400 });
   if (!ALLOWED_NICHES.includes(niche)) return NextResponse.json({ error: "invalid niche" }, { status: 400 });
 
+  if (file.type && file.type !== "application/pdf") {
+    return NextResponse.json({ error: "file must be application/pdf" }, { status: 400 });
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
   if (!buffer.slice(0, 5).equals(Buffer.from("%PDF-"))) {
     return NextResponse.json({ error: "not a PDF (missing magic bytes)" }, { status: 400 });

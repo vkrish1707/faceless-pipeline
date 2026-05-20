@@ -74,6 +74,8 @@ describe("handleExtractIdeas", () => {
     const usage = await db.apiUsage.findMany();
     expect(usage).toHaveLength(1);
     expect(usage[0]!.tokensIn).toBe(1500);
+    expect(usage[0]!.cacheTokensCreated).toBe(1200);
+    expect(usage[0]!.cacheTokensRead).toBe(0);
   });
 
   it("replaces existing ideas for the chapter on re-run", async () => {

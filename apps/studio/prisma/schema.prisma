@@ -102,14 +102,16 @@ model TrendSnapshot {
 }
 
 model ApiUsage {
-  id        String   @id @default(cuid())
-  service   String
-  endpoint  String
-  tokensIn  Int?
-  tokensOut Int?
-  costUsd   Float?
-  traceId   String?
-  createdAt DateTime @default(now())
+  id                 String   @id @default(cuid())
+  service            String
+  endpoint           String
+  tokensIn           Int?
+  tokensOut          Int?
+  cacheTokensRead    Int?
+  cacheTokensCreated Int?
+  costUsd            Float?
+  traceId            String?
+  createdAt          DateTime @default(now())
 }
 
 model Job {
