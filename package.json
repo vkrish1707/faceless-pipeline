@@ -15,12 +15,15 @@
     "smoke:remotion": "pnpm tsx scripts/smoke/remotion-hello.ts",
     "smoke:all": "pnpm smoke:claude && pnpm smoke:pexels && pnpm smoke:piper && pnpm smoke:whisper && pnpm smoke:remotion",
     "setup:piper": "bash scripts/setup/install-piper.sh",
-    "setup:whisper": "bash scripts/setup/install-whisper.sh"
+    "setup:whisper": "bash scripts/setup/install-whisper.sh",
+    "db:generate": "pnpm --filter @studio/app exec prisma generate",
+    "db:migrate": "pnpm --filter @studio/app exec prisma migrate dev",
+    "db:studio": "pnpm --filter @studio/app exec prisma studio"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0",
-    "@types/node": "^22.0.0"
+    "vitest": "^2.0.0"
   }
 }

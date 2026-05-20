@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../../../data/studio.db"
+}
+
+model Book {
+  id        String    @id @default(cuid())
+  title     String
+  filePath  String
+  niche     String
+  pageCount Int
+  status    String
+  createdAt DateTime  @default(now())
+  chapters  Chapter[]
+}
+
+model Chapter {
+  id         String  @id @default(cuid())
+  bookId     String
+  book       Book    @relation(fields: [bookId], references: [id])
+  title      String
+  orderIndex Int
+  startPage  Int
+  endPage    Int
+  rawText    String
+  status     String
+  ideas      Idea[]
+}
+
+model Idea {
+  id              String   @id @default(cuid())
+  chapterId       String
+  chapter         Chapter  @relation(fields: [chapterId], references: [id])
+  title           String
+  summary         String
+  targetLengthSec Int
+  score           Int?
+  scoreBreakdown  Json?
+  trendSignals    Json?
+  flags           Json?
+  seriesId        String?
+  status          String
+  script          Script?
+}
+
+model Script {
+  id          String  @id @default(cuid())
+  ideaId      String  @unique
+  idea        Idea    @relation(fields: [ideaId], references: [id])
+  hook        String
+  body        String
+  cta         String
+  visualBeats Json
+  metadata    Json
+  score       Int?
+  status      String
+  render      Render?
+}
+
+model Asset {
+  id        String    @id @default(cuid())
+  scriptId  String?
+  beatIndex Int?
+  type      String
+  sourceUrl String?
+  localPath String
+  keyword   String?
+  pickedAt  DateTime?
+}
+
+model Render {
+  id           String    @id @default(cuid())
+  scriptId     String    @unique
+  script       Script    @relation(fields: [scriptId], references: [id])
+  audioPath    String?
+  captionsPath String?
+  videoPath    String?
+  metadataPath String?
+  durationSec  Float?
+  fileSizeMB   Float?
+  status       String
+  progress     Int       @default(0)
+  error        String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+}
+
+model TrendSnapshot {
+  id        String   @id @default(cuid())
+  keyword   String
+  source    String
+  data      Json
+  fetchedAt DateTime @default(now())
+
+  @@unique([keyword, source])
+}
+
+model ApiUsage {
+  id        String   @id @default(cuid())
+  service   String
+  endpoint  String
+  tokensIn  Int?
+  tokensOut Int?
+  costUsd   Float?
+  traceId   String?
+  createdAt DateTime @default(now())
+}
