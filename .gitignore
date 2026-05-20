@@ -15,6 +15,8 @@ output/
 assets/cache/
 assets/thumbs/
 assets/voices/*.onnx
+assets/voices/*.onnx.json
+assets/piper-venv/
 assets/whisper/*.bin
 .DS_Store
 .turbo

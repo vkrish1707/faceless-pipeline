@@ -21,6 +21,7 @@
     "db:studio": "pnpm --filter @studio/app exec prisma studio"
   },
   "devDependencies": {
+    "@remotion/renderer": "^4.0.463",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",
@@ -28,6 +29,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
-    "dotenv": "^17.4.2"
+    "@remotion/bundler": "^4.0.463",
+    "@remotion/cli": "^4.0.463",
+    "dotenv": "^17.4.2",
+    "remotion": "^4.0.463"
   }
 }
