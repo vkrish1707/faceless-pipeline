@@ -14,6 +14,8 @@ describe("parsePdf", () => {
   });
 
   it("throws PdfParseError on non-PDF input", async () => {
-    await expect(parsePdf(Buffer.from("not a pdf"))).rejects.toThrow(/PdfParseError/);
+    await expect(parsePdf(Buffer.from("not a pdf"))).rejects.toThrow(
+      expect.objectContaining({ name: "PdfParseError" })
+    );
   });
 });

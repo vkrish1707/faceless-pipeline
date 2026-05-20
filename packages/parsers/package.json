@@ -9,8 +9,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@types/pdfkit": "^0.17.6",
-    "pdf-lib": "^1.17.1",
-    "pdfkit": "^0.18.0"
+    "pdf-lib": "^1.17.1"
   }
 }

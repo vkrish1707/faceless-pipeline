@@ -47,6 +47,6 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdf> {
     return { pageCount: result.numpages, pages };
   } catch (e) {
     const cause = e instanceof Error ? e.message : String(e);
-    throw new PdfParseError(`PdfParseError: ${cause}`);
+    throw new PdfParseError(cause);
   }
 }
