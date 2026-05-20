@@ -44,6 +44,8 @@ model Idea {
   flags           Json?
   seriesId        String?
   status          String
+  sourceQuotes    Json?
+  candidateHooks  Json?
   script          Script?
 }
 
@@ -108,4 +110,22 @@ model ApiUsage {
   costUsd   Float?
   traceId   String?
   createdAt DateTime @default(now())
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String
+  status      String
+  progress    Int       @default(0)
+  error       String?
+  targetType  String
+  targetId    String
+  payload     Json?
+  result      Json?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([targetType, targetId, type])
+  @@index([status])
 }
