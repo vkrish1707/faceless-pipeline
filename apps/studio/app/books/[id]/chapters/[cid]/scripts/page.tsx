@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ScriptCard, type ScriptCardData } from "./ScriptCard";
+import { RenderAllButton } from "./RenderAllButton";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -83,11 +85,27 @@ export default async function ScriptsReviewPage({ params }: { params: Promise<{ 
 
   return (
     <main className="max-w-6xl mx-auto p-8 space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Books", href: "/books" },
+          { label: chapter.book.title, href: `/books/${id}` },
+          { label: chapter.title, href: `/books/${id}/chapters/${cid}` },
+          { label: "Scripts" },
+        ]}
+      />
       <header className="space-y-2">
-        <Link href={`/books/${id}/chapters/${cid}`} className="text-sm text-muted-foreground hover:underline">
-          ← {chapter.title}
-        </Link>
-        <h1 className="text-3xl font-bold">Scripts</h1>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h1 className="text-3xl font-bold">Scripts</h1>
+          <RenderAllButton
+            chapterId={cid}
+            readyCount={cards.filter((c) => {
+              if (!c.script) return false;
+              if (!c.script.render?.audioUrl || !c.script.render?.captionsUrl) return false;
+              if (c.script.totalBeatCount === 0) return false;
+              return c.script.pickedAssetCount === c.script.totalBeatCount;
+            }).length}
+          />
+        </div>
         <p className="text-muted-foreground">{cards.length} approved ideas · {cards.filter((c) => c.script).length} scripts ready</p>
       </header>
 

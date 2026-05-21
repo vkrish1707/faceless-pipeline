@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ScoreButton } from "./ScoreButton";
 import { SuggestionStrip, type SuggestionRow } from "./SuggestionStrip";
 import { IdeaGrid, type IdeaRow } from "./IdeaGrid";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +75,14 @@ export default async function ChapterIdeasPage({ params }: { params: Promise<{ i
 
   return (
     <main className="max-w-5xl mx-auto p-8 space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Books", href: "/books" },
+          { label: chapter.book.title, href: `/books/${id}` },
+          { label: chapter.title },
+        ]}
+      />
       <header className="space-y-2">
-        <Link href={`/books/${id}`} className="text-sm text-muted-foreground hover:underline">← {chapter.book.title}</Link>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">{chapter.title}</h1>
@@ -92,6 +99,11 @@ export default async function ChapterIdeasPage({ params }: { params: Promise<{ i
             <ScoreButton chapterId={chapter.id} ideaCount={chapter.ideas.length} hasScores={hasScores} />
           </div>
         </div>
+        {hasScores && !hasScripted && (
+          <div className="text-xs text-muted-foreground bg-card/40 border border-border rounded px-3 py-2">
+            Next: tick the <span className="text-foreground">Approve</span> checkbox on the ideas you want, then click <span className="text-foreground">Generate scripts</span>.
+          </div>
+        )}
       </header>
 
       <SuggestionStrip suggestions={suggestionRows} />
