@@ -24,3 +24,4 @@ assets/whisper/*.bin
 .vercel
 *.tsbuildinfo
 coverage/
+.claude/worktrees/
