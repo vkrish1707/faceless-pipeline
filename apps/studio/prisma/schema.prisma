@@ -103,6 +103,7 @@ model Render {
   captionsPath String?
   videoPath    String?
   metadataPath String?
+  musicPath    String?
   durationSec  Float?
   fileSizeMB   Float?
   status       String
@@ -113,6 +114,12 @@ model Render {
   completedAt  DateTime?
 }
 
+// Setting is a generic key/value store. Phase 4 introduced "default_voice".
+// Phase 7 adds the following lazily-inserted keys (no schema change):
+//   - "enable_music"        ("true" | "false", default "false")
+//   - "render_concurrency"  ("1".."4", default "2")
+//   - "music_gain_db"       integer string, default "-18"
+//   - "log_level"           ("debug" | "info" | "warn" | "error", default "info")
 model Setting {
   key       String   @id
   value     String
