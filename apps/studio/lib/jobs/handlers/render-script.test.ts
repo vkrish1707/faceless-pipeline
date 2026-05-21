@@ -512,6 +512,147 @@ describe("buildMetadataTxt", () => {
   });
 });
 
+describe("handleRenderScript with background music (Setting enable_music=true)", () => {
+  let scriptId: string;
+
+  beforeEach(async () => {
+    _resetHandlers();
+    const seeded = await seedFixture();
+    scriptId = seeded.scriptId;
+    await db.setting.create({ data: { key: "enable_music", value: "true" } });
+    await db.setting.create({ data: { key: "music_gain_db", value: "-18" } });
+  });
+
+  it("calls mixAudio with the picked track when the file exists; writes musicPath", async () => {
+    const { fsImpl, existing } = makeFakeFs();
+    existing.add("/tmp/photo.jpg");
+    existing.add("/tmp/clip.mp4");
+    existing.add("/tmp/audio.wav");
+    existing.add("/tmp/captions.json");
+    // The picked track for the seeded beats — pickTrack picks urgent (tone-tied
+    // with payoff, urgent wins per the canonical order).
+    existing.add("/music/urgent_pulse.mp3");
+
+    const spawnRemotion = vi.fn(async ({ outPath }: { outPath: string }) => {
+      existing.add(outPath);
+    });
+    const probeMedia = vi.fn(async () => ({
+      width: 1080,
+      height: 1920,
+      durationSec: 12.0,
+      codec: "h264",
+      hasAudio: true,
+    }));
+    const mixAudio = vi.fn(async ({ outPath }: { outPath: string }) => {
+      existing.add(outPath);
+    });
+
+    const handler = createRenderScriptHandler({
+      buildRenderInput: makeMockBuildRenderInput(scriptId) as never,
+      spawnRemotion: spawnRemotion as never,
+      probeMedia: probeMedia as never,
+      extractThumbnail: vi.fn() as never,
+      downloadAsset: vi.fn() as never,
+      mixAudio: mixAudio as never,
+      musicTrackRoot: "/music",
+      fsImpl,
+      outputRoot: "/tmp/render-test/output",
+    });
+    registerHandler("render_script", handler);
+
+    const renderRow = await db.render.findUniqueOrThrow({ where: { scriptId } });
+    const job = await db.job.create({
+      data: { type: "render_script", status: "queued", targetType: "Render", targetId: renderRow.id, payload: { scriptId } },
+    });
+    await runJob(job.id);
+
+    expect(mixAudio).toHaveBeenCalledTimes(1);
+    const callArg = mixAudio.mock.calls[0]![0] as { musicPath: string; gainDb: number };
+    expect(callArg.musicPath).toBe("/music/urgent_pulse.mp3");
+    expect(callArg.gainDb).toBe(-18);
+
+    const after = await db.render.findUniqueOrThrow({ where: { scriptId } });
+    expect(after.status).toBe("done");
+    expect(after.musicPath).toBe("/music/urgent_pulse.mp3");
+  });
+
+  it("warns + keeps render done when the track file is missing", async () => {
+    const { fsImpl, existing } = makeFakeFs();
+    existing.add("/tmp/photo.jpg");
+    existing.add("/tmp/clip.mp4");
+    // Note: /music/urgent_pulse.mp3 is NOT added — pickTrack still picks it
+    // but the existsSync check fails so we skip the mix.
+
+    const spawnRemotion = vi.fn(async ({ outPath }: { outPath: string }) => {
+      existing.add(outPath);
+    });
+    const mixAudio = vi.fn();
+
+    const handler = createRenderScriptHandler({
+      buildRenderInput: makeMockBuildRenderInput(scriptId) as never,
+      spawnRemotion: spawnRemotion as never,
+      probeMedia: vi.fn(async () => ({ width: 1080, height: 1920, durationSec: 12, codec: "h264", hasAudio: true })) as never,
+      extractThumbnail: vi.fn() as never,
+      downloadAsset: vi.fn() as never,
+      mixAudio: mixAudio as never,
+      musicTrackRoot: "/music",
+      fsImpl,
+      outputRoot: "/tmp/render-test/output",
+    });
+    registerHandler("render_script", handler);
+
+    const renderRow = await db.render.findUniqueOrThrow({ where: { scriptId } });
+    const job = await db.job.create({
+      data: { type: "render_script", status: "queued", targetType: "Render", targetId: renderRow.id, payload: { scriptId } },
+    });
+    await runJob(job.id);
+
+    expect(mixAudio).not.toHaveBeenCalled();
+    const after = await db.render.findUniqueOrThrow({ where: { scriptId } });
+    expect(after.status).toBe("done");
+    expect(after.musicPath).toBeNull();
+    expect(after.warning ?? "").toMatch(/music track missing/);
+  });
+
+  it("on mix failure, render still succeeds and warning is captured", async () => {
+    const { fsImpl, existing } = makeFakeFs();
+    existing.add("/tmp/photo.jpg");
+    existing.add("/tmp/clip.mp4");
+    existing.add("/music/urgent_pulse.mp3");
+
+    const spawnRemotion = vi.fn(async ({ outPath }: { outPath: string }) => {
+      existing.add(outPath);
+    });
+    const mixAudio = vi.fn(async () => {
+      throw new Error("ffmpeg exited 1: codec lookup failed");
+    });
+
+    const handler = createRenderScriptHandler({
+      buildRenderInput: makeMockBuildRenderInput(scriptId) as never,
+      spawnRemotion: spawnRemotion as never,
+      probeMedia: vi.fn(async () => ({ width: 1080, height: 1920, durationSec: 12, codec: "h264", hasAudio: true })) as never,
+      extractThumbnail: vi.fn() as never,
+      downloadAsset: vi.fn() as never,
+      mixAudio: mixAudio as never,
+      musicTrackRoot: "/music",
+      fsImpl,
+      outputRoot: "/tmp/render-test/output",
+    });
+    registerHandler("render_script", handler);
+
+    const renderRow = await db.render.findUniqueOrThrow({ where: { scriptId } });
+    const job = await db.job.create({
+      data: { type: "render_script", status: "queued", targetType: "Render", targetId: renderRow.id, payload: { scriptId } },
+    });
+    await runJob(job.id);
+
+    const after = await db.render.findUniqueOrThrow({ where: { scriptId } });
+    expect(after.status).toBe("done");
+    expect(after.musicPath).toBeNull();
+    expect(after.warning ?? "").toMatch(/music mix failed/);
+  });
+});
+
 describe("error class metadata", () => {
   it("RemotionRenderError carries exitCode + truncates stderr in message", () => {
     const err = new RemotionRenderError(127, "boom");

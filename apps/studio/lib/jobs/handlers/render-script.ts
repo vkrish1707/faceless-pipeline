@@ -16,6 +16,9 @@ import { db as defaultDb } from "../../db";
 import { buildRenderInput as defaultBuildRenderInput, MissingPrerequisiteError } from "../../render/build-input";
 import { probeMedia as defaultProbeMedia, type ProbeResult } from "../../probe/ffprobe";
 import { extractThumbnail as defaultExtractThumbnail } from "../../probe/thumbnail";
+import { mixAudio as defaultMixAudio } from "../../music/mixAudio";
+import { pickTrack as defaultPickTrack } from "../../music/pickTrack";
+import { emitRender } from "../emit";
 import type { JobHandler } from "../types";
 import type { RenderInput } from "@remotion-pkg/data/types";
 
@@ -111,6 +114,9 @@ type SpawnRemotionFn = (args: {
   env?: NodeJS.ProcessEnv;
 }) => Promise<void>;
 
+type MixAudioFn = typeof defaultMixAudio;
+type PickTrackFn = typeof defaultPickTrack;
+
 type Deps = {
   db?: typeof defaultDb;
   buildRenderInput?: typeof defaultBuildRenderInput;
@@ -125,6 +131,11 @@ type Deps = {
   diskMinBytes?: number;
   /** Concurrency for lazy asset downloads. */
   downloadConcurrency?: number;
+  /** Background-music mix (phase 7). */
+  mixAudio?: MixAudioFn;
+  pickTrack?: PickTrackFn;
+  /** Override the music asset root for tests. */
+  musicTrackRoot?: string;
 };
 
 const DEFAULT_DISK_MIN_BYTES = 2 * 1024 * 1024 * 1024;
@@ -225,6 +236,9 @@ export function createRenderScriptHandler(
   const remotionEntry = deps.remotionEntry ?? path.resolve(REMOTION_ENTRY);
   const diskMinBytes = deps.diskMinBytes ?? DEFAULT_DISK_MIN_BYTES;
   const downloadConcurrency = deps.downloadConcurrency ?? 4;
+  const mixAudio = deps.mixAudio ?? defaultMixAudio;
+  const pickTrack = deps.pickTrack ?? defaultPickTrack;
+  const musicTrackRoot = deps.musicTrackRoot;
 
   return async function handleRenderScript(payload, ctx) {
     const scriptId = payload.scriptId;
@@ -289,6 +303,7 @@ export function createRenderScriptHandler(
       where: { id: render.id },
       data: { status: "render", progress: 25, error: null, startedAt: new Date() },
     });
+    emitRender({ renderId: render.id, status: "render", progress: 25 });
 
     // The Remotion CLI writes its output to a temp path under stagingDir, then
     // we copy it into the bundle dir. This keeps the prior render available
@@ -308,6 +323,7 @@ export function createRenderScriptHandler(
         where: { id: render.id },
         data: { status: "failed", error: detail.slice(0, 4000), completedAt: new Date() },
       });
+      emitRender({ renderId: render.id, status: "failed", progress: 25, error: detail.slice(0, 4000) });
       throw err;
     }
 
@@ -319,7 +335,46 @@ export function createRenderScriptHandler(
         where: { id: render.id },
         data: { status: "failed", error: detail, completedAt: new Date() },
       });
+      emitRender({ renderId: render.id, status: "failed", progress: 25, error: detail });
       throw new EmptyMp4Error(videoStat.size);
+    }
+
+    // Optional: background-music mix. Reads Setting("enable_music") + the
+    // user-configured gain. Mix failures are non-fatal — we capture stderr
+    // into Render.warning and keep the un-mixed video.
+    let mixedMusicPath: string | null = null;
+    const enableMusicRow = await db.setting.findUnique({ where: { key: "enable_music" } });
+    if (enableMusicRow?.value === "true") {
+      const gainRow = await db.setting.findUnique({ where: { key: "music_gain_db" } });
+      const gainDb = gainRow ? Number.parseFloat(gainRow.value) : -18;
+      const beats = (input.visualBeats as ReadonlyArray<{ tone?: string }>) ?? [];
+      const picked = pickTrack(beats, musicTrackRoot ? { trackRoot: musicTrackRoot } : {});
+      if (!fsImpl.existsSync(picked.path)) {
+        await db.render.update({
+          where: { id: render.id },
+          data: { warning: `music track missing: ${picked.path}` },
+        });
+      } else {
+        const mixedPath = path.join(stagingDir, "video.mixed.mp4");
+        try {
+          await mixAudio({
+            videoPath: stagingVideoPath,
+            musicPath: picked.path,
+            outPath: mixedPath,
+            gainDb,
+          });
+          // Atomic rename — replace the staging video with the mixed file.
+          await fsImpl.copyFile(mixedPath, stagingVideoPath);
+          mixedMusicPath = picked.path;
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : String(err);
+          await db.render.update({
+            where: { id: render.id },
+            data: { warning: `music mix failed: ${detail.slice(0, 300)}` },
+          });
+          // Keep the original un-mixed video — render still succeeds.
+        }
+      }
     }
 
     await ctx.updateProgress(90);
@@ -329,6 +384,7 @@ export function createRenderScriptHandler(
       where: { id: render.id },
       data: { status: "bundle", progress: 90 },
     });
+    emitRender({ renderId: render.id, status: "bundle", progress: 90 });
 
     let probe: ProbeResult;
     try {
@@ -438,6 +494,7 @@ export function createRenderScriptHandler(
       data: {
         videoPath: finalVideoPath,
         metadataPath,
+        musicPath: mixedMusicPath,
         durationSec: probe.durationSec,
         fileSizeMB,
         status: "done",
@@ -445,6 +502,12 @@ export function createRenderScriptHandler(
         error: null,
         completedAt: new Date(),
       },
+    });
+    emitRender({
+      renderId: render.id,
+      status: "done",
+      progress: 100,
+      videoPath: finalVideoPath,
     });
 
     await db.apiUsage.create({
