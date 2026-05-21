@@ -5,6 +5,7 @@ import { handleGenerateScript } from "./handlers/generate-script";
 import { handleRescoreScript } from "./handlers/rescore-script";
 import { handleSynthesizeScript } from "./handlers/synthesize-script";
 import { handleFetchBroll } from "./handlers/fetch-broll";
+import { handleRenderScript } from "./handlers/render-script";
 
 let registered = false;
 export function ensureHandlersRegistered(): void {
@@ -15,6 +16,7 @@ export function ensureHandlersRegistered(): void {
   registerHandler("rescore_script", handleRescoreScript);
   registerHandler("synthesize_script", handleSynthesizeScript);
   registerHandler("fetch_broll", handleFetchBroll);
+  registerHandler("render_script", handleRenderScript);
   registered = true;
 }
 

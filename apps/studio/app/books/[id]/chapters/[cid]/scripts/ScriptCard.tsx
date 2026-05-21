@@ -31,6 +31,7 @@ export type RenderInfo = {
   warning: string | null;
   audioUrl: string | null;
   captionsUrl: string | null;
+  videoUrl: string | null;
   durationSec: number | null;
 };
 
@@ -50,10 +51,15 @@ export type ScriptCardData = {
     lastEditedAt: string | null;
     generatedAt: string | null;
     render: RenderInfo | null;
+    /** How many beats have a non-null pickedAssetId. Used by the Render gate. */
+    pickedAssetCount: number;
+    /** Total beat count — gate enabled when pickedAssetCount === totalBeatCount. */
+    totalBeatCount: number;
   } | null;
 };
 
 type SynthJobInfo = { jobId: string; status: string; progress: number; error: string | null };
+type RenderJobInfo = { jobId: string; status: string; progress: number; error: string | null };
 
 const DEBOUNCE_MS = 800;
 
@@ -72,6 +78,9 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
   const [synthJob, setSynthJob] = useState<SynthJobInfo | null>(null);
   const [synthBusy, setSynthBusy] = useState(false);
   const synthRefreshedRef = useRef(false);
+  const [renderJob, setRenderJob] = useState<RenderJobInfo | null>(null);
+  const [renderBusy, setRenderBusy] = useState(false);
+  const renderRefreshedRef = useRef(false);
   const [showMeta, setShowMeta] = useState(false);
   const [showBeats, setShowBeats] = useState(true);
 
@@ -80,6 +89,26 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
   const render = script?.render ?? null;
   const synthActive = synthJob?.status === "queued" || synthJob?.status === "running";
   const hasFinishedRender = render?.status === "done" && !!render.audioUrl && !!render.captionsUrl;
+
+  // Render gate (matches /api/scripts/[id]/render's preconditions exactly):
+  //   - audio + captions present
+  //   - every beat has a pickedAssetId
+  //   - no render_script job currently running
+  const renderActive = renderJob?.status === "queued" || renderJob?.status === "running";
+  const renderGateMissing: string[] = [];
+  if (script) {
+    if (!render?.audioUrl) renderGateMissing.push("audio");
+    if (!render?.captionsUrl) renderGateMissing.push("captions");
+    if (script.totalBeatCount > 0 && script.pickedAssetCount < script.totalBeatCount) {
+      renderGateMissing.push(
+        `pick ${script.totalBeatCount - script.pickedAssetCount} more beat${
+          script.totalBeatCount - script.pickedAssetCount === 1 ? "" : "s"
+        }`
+      );
+    }
+  }
+  const renderEnabled = !!script && renderGateMissing.length === 0 && !renderActive && !synthActive;
+  const hasFinishedVideo = render?.status === "done" && !!render.videoUrl;
 
   useEffect(() => {
     if (!data.script) return;
@@ -149,6 +178,32 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
     };
   }, [synthActive, synthJob, router]);
 
+  useEffect(() => {
+    if (!renderActive || !renderJob) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || document.hidden) return;
+      try {
+        const res = await fetch(`/api/jobs/${renderJob.jobId}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (cancelled) return;
+        setRenderJob({ jobId: j.id, status: j.status, progress: j.progress, error: j.error });
+        if ((j.status === "completed" || j.status === "failed") && !renderRefreshedRef.current) {
+          renderRefreshedRef.current = true;
+          router.refresh();
+        }
+      } catch {
+        /* transient */
+      }
+    };
+    const iv = setInterval(tick, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [renderActive, renderJob, router]);
+
   function queueSave(partial: Record<string, unknown>) {
     if (!script) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -205,6 +260,50 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
       setSynthJob({ jobId: d.jobId, status: "queued", progress: 0, error: null });
     } finally {
       setSynthBusy(false);
+    }
+  }
+
+  async function renderVideo() {
+    if (!script) return;
+    setRenderBusy(true);
+    renderRefreshedRef.current = false;
+    try {
+      const res = await fetch(`/api/scripts/${script.id}/render`, { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) {
+        const missing = Array.isArray(d.missing) ? ` (${d.missing.join(", ")})` : "";
+        alert(`Could not start render: ${d.error ?? res.statusText}${missing}`);
+        return;
+      }
+      setRenderJob({ jobId: d.jobId, status: "queued", progress: 0, error: null });
+    } finally {
+      setRenderBusy(false);
+    }
+  }
+
+  async function reveal() {
+    if (!render) return;
+    try {
+      await fetch(`/api/renders/${render.id}/reveal`, { method: "POST" });
+    } catch {
+      /* best-effort, ignore */
+    }
+  }
+
+  async function rerender() {
+    if (!render) return;
+    setRenderBusy(true);
+    renderRefreshedRef.current = false;
+    try {
+      const res = await fetch(`/api/renders/${render.id}/rerender`, { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) {
+        alert(`Could not re-render: ${d.error ?? res.statusText}`);
+        return;
+      }
+      setRenderJob({ jobId: d.jobId, status: "queued", progress: 0, error: null });
+    } finally {
+      setRenderBusy(false);
     }
   }
 
@@ -382,7 +481,7 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
           )}
         </div>
 
-        {hasFinishedRender && render?.audioUrl && render.captionsUrl && (
+        {hasFinishedRender && render?.audioUrl && render.captionsUrl && !hasFinishedVideo && (
           <AudioPreview
             audioUrl={render.audioUrl}
             captionsUrl={render.captionsUrl}
@@ -390,13 +489,60 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
           />
         )}
 
-        <div className="flex items-center gap-2 pt-1">
+        {hasFinishedVideo && render?.videoUrl && (
+          <div className="space-y-1">
+            <video
+              controls
+              src={render.videoUrl}
+              className="w-full rounded-md bg-black"
+              style={{ maxHeight: 480 }}
+            />
+            {render.warning && (
+              <p className="text-xs text-yellow-300">warning: {render.warning}</p>
+            )}
+          </div>
+        )}
+
+        {renderActive && renderJob && (
+          <div className="text-xs text-muted-foreground">
+            rendering… {renderJob.status} {renderJob.progress}%
+          </div>
+        )}
+        {render?.status === "failed" && render.error && (
+          <p className="text-xs text-red-400" title={render.error}>
+            render failed: {render.error.split("\n")[0]}
+          </p>
+        )}
+
+        <div className="flex items-center gap-2 pt-1 flex-wrap">
           <Button size="sm" variant="outline" onClick={manualRescore} disabled={savingState === "rescoring"}>
             Re-score
           </Button>
           <Button size="sm" onClick={synthesize} disabled={synthBusy || synthActive}>
             {synthLabel}
           </Button>
+          <Button
+            size="sm"
+            onClick={renderVideo}
+            disabled={!renderEnabled || renderBusy}
+            title={
+              renderGateMissing.length > 0
+                ? `Render needs: ${renderGateMissing.join(", ")}`
+                : "Render to MP4 via Remotion"
+            }
+          >
+            {hasFinishedVideo ? "Render again" : "Render"}
+          </Button>
+          {hasFinishedVideo && (
+            <>
+              <Button size="sm" variant="outline" onClick={rerender} disabled={renderBusy || renderActive}>
+                Re-render
+              </Button>
+              <Button size="sm" variant="ghost" onClick={reveal}>
+                Open folder
+              </Button>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

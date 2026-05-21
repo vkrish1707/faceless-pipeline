@@ -19,42 +19,67 @@ export default async function ScriptsReviewPage({ params }: { params: Promise<{ 
   });
   if (!chapter || chapter.bookId !== id) notFound();
 
-  const cards: ScriptCardData[] = chapter.ideas.map((idea) => ({
-    ideaId: idea.id,
-    ideaTitle: idea.title,
-    targetLengthSec: idea.targetLengthSec,
-    script: idea.script
-      ? {
-          id: idea.script.id,
-          hook: idea.script.hook,
-          body: idea.script.body,
-          cta: idea.script.cta,
-          score: idea.script.score,
-          visualBeats: ((idea.script.visualBeats as unknown) as ScriptCardData["script"] extends infer S ? S extends { visualBeats: infer B } ? B : never : never) ?? [],
-          metadata: ((idea.script.metadata as unknown) as ScriptCardData["script"] extends infer S ? S extends { metadata: infer M } ? M : never : never) ?? {
-            youtubeTitle: "",
-            caption: "",
-            hashtags: [],
-            thumbnailConcept: "",
-          },
-          warnings: (idea.script.warnings as Array<{ kind: string; detail: string }> | null) ?? [],
-          lastEditedAt: idea.script.lastEditedAt ? idea.script.lastEditedAt.toISOString() : null,
-          generatedAt: idea.script.generatedAt ? idea.script.generatedAt.toISOString() : null,
-          render: idea.script.render
-            ? {
-                id: idea.script.render.id,
-                status: idea.script.render.status,
-                progress: idea.script.render.progress,
-                error: idea.script.render.error,
-                warning: idea.script.render.warning,
-                audioUrl: idea.script.render.audioPath ? `/api/renders/${idea.script.render.id}/audio` : null,
-                captionsUrl: idea.script.render.captionsPath ? `/api/renders/${idea.script.render.id}/captions` : null,
-                durationSec: idea.script.render.durationSec,
-              }
-            : null,
-        }
-      : null,
-  }));
+  const cards: ScriptCardData[] = chapter.ideas.map((idea) => {
+    const beats =
+      (idea.script?.visualBeats as unknown as Array<{ pickedAssetId?: string | null }> | undefined) ?? [];
+    const totalBeatCount = beats.length;
+    const pickedAssetCount = beats.filter((b) => !!b.pickedAssetId).length;
+    return {
+      ideaId: idea.id,
+      ideaTitle: idea.title,
+      targetLengthSec: idea.targetLengthSec,
+      script: idea.script
+        ? {
+            id: idea.script.id,
+            hook: idea.script.hook,
+            body: idea.script.body,
+            cta: idea.script.cta,
+            score: idea.script.score,
+            visualBeats:
+              ((idea.script.visualBeats as unknown) as ScriptCardData["script"] extends infer S
+                ? S extends { visualBeats: infer B }
+                  ? B
+                  : never
+                : never) ?? [],
+            metadata:
+              ((idea.script.metadata as unknown) as ScriptCardData["script"] extends infer S
+                ? S extends { metadata: infer M }
+                  ? M
+                  : never
+                : never) ?? {
+                youtubeTitle: "",
+                caption: "",
+                hashtags: [],
+                thumbnailConcept: "",
+              },
+            warnings: (idea.script.warnings as Array<{ kind: string; detail: string }> | null) ?? [],
+            lastEditedAt: idea.script.lastEditedAt ? idea.script.lastEditedAt.toISOString() : null,
+            generatedAt: idea.script.generatedAt ? idea.script.generatedAt.toISOString() : null,
+            pickedAssetCount,
+            totalBeatCount,
+            render: idea.script.render
+              ? {
+                  id: idea.script.render.id,
+                  status: idea.script.render.status,
+                  progress: idea.script.render.progress,
+                  error: idea.script.render.error,
+                  warning: idea.script.render.warning,
+                  audioUrl: idea.script.render.audioPath
+                    ? `/api/renders/${idea.script.render.id}/audio`
+                    : null,
+                  captionsUrl: idea.script.render.captionsPath
+                    ? `/api/renders/${idea.script.render.id}/captions`
+                    : null,
+                  videoUrl: idea.script.render.videoPath
+                    ? `/api/renders/${idea.script.render.id}/video`
+                    : null,
+                  durationSec: idea.script.render.durationSec,
+                }
+              : null,
+          }
+        : null,
+    };
+  });
 
   return (
     <main className="max-w-6xl mx-auto p-8 space-y-6">

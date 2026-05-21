@@ -4,7 +4,8 @@ export type JobType =
   | "generate_script"
   | "rescore_script"
   | "synthesize_script"
-  | "fetch_broll";
+  | "fetch_broll"
+  | "render_script";
 
 export type JobStatus = "queued" | "running" | "completed" | "failed";
 
