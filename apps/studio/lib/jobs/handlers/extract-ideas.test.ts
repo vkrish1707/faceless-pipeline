@@ -28,6 +28,10 @@ describe("handleExtractIdeas", () => {
 
   beforeEach(async () => {
     await db.apiUsage.deleteMany();
+    await db.pexelsCache.deleteMany();
+    await db.asset.deleteMany();
+    await db.render.deleteMany();
+    await db.script.deleteMany();
     await db.suggestion.deleteMany();
     await db.render.deleteMany();
     await db.script.deleteMany();
