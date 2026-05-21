@@ -1,4 +1,9 @@
-export type JobType = "extract_ideas" | "score_chapter" | "generate_script" | "rescore_script";
+export type JobType =
+  | "extract_ideas"
+  | "score_chapter"
+  | "generate_script"
+  | "rescore_script"
+  | "synthesize_script";
 
 export type JobStatus = "queued" | "running" | "completed" | "failed";
 

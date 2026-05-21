@@ -93,8 +93,15 @@ model Render {
   status       String
   progress     Int       @default(0)
   error        String?
+  warning      String?
   startedAt    DateTime?
   completedAt  DateTime?
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model Suggestion {
