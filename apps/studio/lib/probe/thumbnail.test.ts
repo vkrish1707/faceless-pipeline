@@ -19,7 +19,7 @@ describe("buildFfmpegThumbnailArgs", () => {
 
 function makeFakeSpawn(code: number, stderr = "") {
   const calls: { cmd: string; args: ReadonlyArray<string> }[] = [];
-  const spawnImpl = vi.fn((cmd: string, args: ReadonlyArray<string>) => {
+  const spawnImpl = vi.fn((cmd: string, args: ReadonlyArray<string>): any => {
     calls.push({ cmd, args });
     const proc = new EventEmitter() as EventEmitter & {
       stdout: EventEmitter;

@@ -82,7 +82,7 @@ describe("parseFfprobeJson", () => {
  */
 function makeFakeSpawn(opts: { stdout: string; stderr?: string; code: number }) {
   const calls: { cmd: string; args: ReadonlyArray<string> }[] = [];
-  const spawnImpl = vi.fn((cmd: string, args: ReadonlyArray<string>) => {
+  const spawnImpl = vi.fn((cmd: string, args: ReadonlyArray<string>): any => {
     calls.push({ cmd, args });
     const proc = new EventEmitter() as EventEmitter & {
       stdout: EventEmitter;
