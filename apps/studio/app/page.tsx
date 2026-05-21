@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { SystemStatus } from "@/components/system-status";
+import { PipelineGuide, type PipelineCounts } from "@/components/PipelineGuide";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [books, activeJobs] = await Promise.all([
+  const [books, activeJobs, counts] = await Promise.all([
     db.book.findMany({
       orderBy: { createdAt: "desc" },
       take: 4,
@@ -18,20 +19,39 @@ export default async function HomePage() {
       },
     }),
     db.job.count({ where: { status: { in: ["queued", "running"] } } }),
+    Promise.all([
+      db.book.count(),
+      db.idea.count(),
+      db.script.count(),
+      db.render.count({ where: { audioPath: { not: null } } }),
+      // brollPicked = scripts whose every beat has pickedAssetId; coarse-approximate by counting
+      // Asset rows marked pickedAt (we don't have a denormalized counter, so just count picked assets).
+      db.asset.count({ where: { pickedAt: { not: null } } }),
+      db.render.count({ where: { videoPath: { not: null } } }),
+    ]),
   ]);
+
+  const pipelineCounts: PipelineCounts = {
+    books: counts[0],
+    ideas: counts[1],
+    scripts: counts[2],
+    audios: counts[3],
+    brollPicked: counts[4],
+    renders: counts[5],
+  };
 
   return (
     <main className="max-w-5xl mx-auto p-8 space-y-8">
-      <header>
+      <header className="space-y-2">
         <h1 className="text-3xl font-bold">Faceless Pipeline</h1>
-        <p className="text-muted-foreground mt-1">PDF → scored ideas → scripts → audio → b-roll → render.</p>
+        <p className="text-muted-foreground">PDF → scored ideas → scripts → audio → b-roll → render.</p>
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/books/new" className="group">
           <Card className="transition group-hover:border-primary/60 h-full">
             <CardContent className="pt-6 space-y-1">
-              <div className="text-lg font-semibold">Upload a book</div>
+              <div className="text-lg font-semibold">+ Upload a book</div>
               <p className="text-xs text-muted-foreground">Drop a finance PDF to start the pipeline.</p>
             </CardContent>
           </Card>
@@ -40,7 +60,9 @@ export default async function HomePage() {
           <Card className="transition group-hover:border-primary/60 h-full">
             <CardContent className="pt-6 space-y-1">
               <div className="text-lg font-semibold">Books</div>
-              <p className="text-xs text-muted-foreground">{books.length === 0 ? "No books yet" : `${books.length} recent`}</p>
+              <p className="text-xs text-muted-foreground">
+                {books.length === 0 ? "No books yet" : `${pipelineCounts.books} total · ${books.length} shown below`}
+              </p>
             </CardContent>
           </Card>
         </Link>
@@ -49,12 +71,16 @@ export default async function HomePage() {
             <CardContent className="pt-6 space-y-1">
               <div className="text-lg font-semibold">Render queue</div>
               <p className="text-xs text-muted-foreground">
-                {activeJobs === 0 ? "Nothing running" : `${activeJobs} job${activeJobs === 1 ? "" : "s"} in flight`}
+                {activeJobs === 0
+                  ? `${pipelineCounts.renders} done · nothing running`
+                  : `${activeJobs} job${activeJobs === 1 ? "" : "s"} in flight`}
               </p>
             </CardContent>
           </Card>
         </Link>
       </section>
+
+      <PipelineGuide counts={pipelineCounts} />
 
       {books.length > 0 && (
         <section className="space-y-3">
