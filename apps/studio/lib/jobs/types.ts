@@ -3,7 +3,8 @@ export type JobType =
   | "score_chapter"
   | "generate_script"
   | "rescore_script"
-  | "synthesize_script";
+  | "synthesize_script"
+  | "fetch_broll";
 
 export type JobStatus = "queued" | "running" | "completed" | "failed";
 

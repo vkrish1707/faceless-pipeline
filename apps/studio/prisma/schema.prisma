@@ -51,33 +51,48 @@ model Idea {
 }
 
 model Script {
-  id           String    @id @default(cuid())
-  ideaId       String    @unique
-  idea         Idea      @relation(fields: [ideaId], references: [id])
-  hook         String
-  body         String
-  cta          String
-  visualBeats  Json
-  metadata     Json
-  score        Int?
+  id             String    @id @default(cuid())
+  ideaId         String    @unique
+  idea           Idea      @relation(fields: [ideaId], references: [id])
+  hook           String
+  body           String
+  cta            String
+  visualBeats    Json
+  metadata       Json
+  score          Int?
   scoreBreakdown Json?
-  status       String
-  warnings     Json?
-  approvedAt   DateTime?
-  generatedAt  DateTime?
-  lastEditedAt DateTime?
-  render       Render?
+  status         String
+  warnings       Json?
+  approvedAt     DateTime?
+  generatedAt    DateTime?
+  lastEditedAt   DateTime?
+  render         Render?
+  assets         Asset[]
 }
 
 model Asset {
-  id        String    @id @default(cuid())
-  scriptId  String?
-  beatIndex Int?
-  type      String
-  sourceUrl String?
-  localPath String
-  keyword   String?
-  pickedAt  DateTime?
+  id          String    @id @default(cuid())
+  scriptId    String?
+  script      Script?   @relation(fields: [scriptId], references: [id])
+  beatIndex   Int?
+  type        String
+  sourceUrl   String?
+  localPath   String
+  thumbPath   String?
+  keyword     String?
+  durationSec Float?
+  width       Int?
+  height      Int?
+  pickedAt    DateTime?
+
+  @@index([scriptId, beatIndex])
+}
+
+model PexelsCache {
+  id        String   @id @default(cuid())
+  queryKey  String   @unique
+  results   Json
+  fetchedAt DateTime @default(now())
 }
 
 model Render {

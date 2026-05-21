@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@studio/assets": "workspace:*",
     "@studio/captions": "workspace:*",
     "@studio/parsers": "workspace:*",
     "@studio/pipeline": "workspace:*",
