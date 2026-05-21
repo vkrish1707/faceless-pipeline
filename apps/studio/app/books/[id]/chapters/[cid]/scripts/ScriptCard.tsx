@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AudioPreview } from "@/components/audio/AudioPreview";
 
 type Beat = {
   start: number;
@@ -22,6 +23,17 @@ type Metadata = {
   thumbnailConcept: string;
 };
 
+export type RenderInfo = {
+  id: string;
+  status: string;
+  progress: number;
+  error: string | null;
+  warning: string | null;
+  audioUrl: string | null;
+  captionsUrl: string | null;
+  durationSec: number | null;
+};
+
 export type ScriptCardData = {
   ideaId: string;
   ideaTitle: string;
@@ -37,8 +49,11 @@ export type ScriptCardData = {
     warnings: Array<{ kind: string; detail: string }>;
     lastEditedAt: string | null;
     generatedAt: string | null;
+    render: RenderInfo | null;
   } | null;
 };
+
+type SynthJobInfo = { jobId: string; status: string; progress: number; error: string | null };
 
 const DEBOUNCE_MS = 800;
 
@@ -54,10 +69,17 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
   const [metaThumb, setMetaThumb] = useState(data.script?.metadata.thumbnailConcept ?? "");
   const [savingState, setSavingState] = useState<"idle" | "saving" | "saved" | "rescoring">("idle");
   const [rescoreJobId, setRescoreJobId] = useState<string | null>(null);
+  const [synthJob, setSynthJob] = useState<SynthJobInfo | null>(null);
+  const [synthBusy, setSynthBusy] = useState(false);
+  const synthRefreshedRef = useRef(false);
   const [showMeta, setShowMeta] = useState(false);
   const [showBeats, setShowBeats] = useState(true);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const render = script?.render ?? null;
+  const synthActive = synthJob?.status === "queued" || synthJob?.status === "running";
+  const hasFinishedRender = render?.status === "done" && !!render.audioUrl && !!render.captionsUrl;
 
   useEffect(() => {
     if (!data.script) return;
@@ -95,6 +117,37 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
       clearInterval(iv);
     };
   }, [rescoreJobId, router]);
+
+  useEffect(() => {
+    if (!synthActive || !synthJob) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || document.hidden) return;
+      try {
+        const res = await fetch(`/api/jobs/${synthJob.jobId}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (cancelled) return;
+        setSynthJob({ jobId: j.id, status: j.status, progress: j.progress, error: j.error });
+        if ((j.status === "completed" || j.status === "failed") && !synthRefreshedRef.current) {
+          synthRefreshedRef.current = true;
+          router.refresh();
+        }
+      } catch {
+        /* transient */
+      }
+    };
+    const iv = setInterval(tick, 2000);
+    const onVis = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [synthActive, synthJob, router]);
 
   function queueSave(partial: Record<string, unknown>) {
     if (!script) return;
@@ -138,6 +191,23 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
     setSavingState("rescoring");
   }
 
+  async function synthesize() {
+    if (!script) return;
+    setSynthBusy(true);
+    synthRefreshedRef.current = false;
+    try {
+      const res = await fetch(`/api/scripts/${script.id}/synthesize`, { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) {
+        alert(`Could not start synthesis: ${d.error ?? res.statusText}`);
+        return;
+      }
+      setSynthJob({ jobId: d.jobId, status: "queued", progress: 0, error: null });
+    } finally {
+      setSynthBusy(false);
+    }
+  }
+
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -160,6 +230,7 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
   }
 
   const scoreVariant = script.score == null ? "outline" : script.score >= 80 ? "success" : script.score >= 60 ? "warn" : "outline";
+  const synthLabel = hasFinishedRender ? "Regenerate audio" : "Synthesize";
 
   return (
     <Card>
@@ -169,6 +240,17 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
           {savingState === "saving" && <span className="text-xs text-muted-foreground">saving…</span>}
           {savingState === "saved" && <span className="text-xs text-green-400">saved</span>}
           {savingState === "rescoring" && <span className="text-xs text-yellow-300">score updating…</span>}
+          {render?.status === "failed" && (
+            <Badge variant="error" title={render.error ?? ""}>synth failed</Badge>
+          )}
+          {synthActive && (
+            <Badge variant="warn">
+              {synthJob!.status} {synthJob!.progress}%
+            </Badge>
+          )}
+          {hasFinishedRender && render?.durationSec != null && (
+            <Badge variant="outline">{render.durationSec.toFixed(1)}s</Badge>
+          )}
           <Badge variant={scoreVariant}>{script.score ?? "—"}</Badge>
           <Badge variant="outline">{data.targetLengthSec}s</Badge>
         </div>
@@ -300,9 +382,20 @@ export function ScriptCard({ data }: { data: ScriptCardData }) {
           )}
         </div>
 
+        {hasFinishedRender && render?.audioUrl && render.captionsUrl && (
+          <AudioPreview
+            audioUrl={render.audioUrl}
+            captionsUrl={render.captionsUrl}
+            warning={render.warning}
+          />
+        )}
+
         <div className="flex items-center gap-2 pt-1">
           <Button size="sm" variant="outline" onClick={manualRescore} disabled={savingState === "rescoring"}>
             Re-score
+          </Button>
+          <Button size="sm" onClick={synthesize} disabled={synthBusy || synthActive}>
+            {synthLabel}
           </Button>
         </div>
       </CardContent>

@@ -10,9 +10,12 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@studio/assets": "workspace:*",
+    "@studio/captions": "workspace:*",
     "@studio/parsers": "workspace:*",
     "@studio/pipeline": "workspace:*",
     "@studio/trends": "workspace:*",
+    "@studio/tts": "workspace:*",
     "p-limit": "^6.1.0",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",

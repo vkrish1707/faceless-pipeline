@@ -48,6 +48,12 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@18.3.29)(react@18.3.1)
+      '@studio/assets':
+        specifier: workspace:*
+        version: link:../../packages/assets
+      '@studio/captions':
+        specifier: workspace:*
+        version: link:../../packages/captions
       '@studio/parsers':
         specifier: workspace:*
         version: link:../../packages/parsers
@@ -57,6 +63,9 @@ importers:
       '@studio/trends':
         specifier: workspace:*
         version: link:../../packages/trends
+      '@studio/tts':
+        specifier: workspace:*
+        version: link:../../packages/tts
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

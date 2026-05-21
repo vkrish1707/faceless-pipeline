@@ -10,9 +10,10 @@ build
 logs/
 data/*.db
 data/*.db-journal
-uploads/
+/uploads/
 output/
 assets/cache/
+assets/manual/
 assets/pdfs/
 assets/thumbs/
 assets/voices/*.onnx

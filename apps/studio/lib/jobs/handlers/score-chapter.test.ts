@@ -11,9 +11,11 @@ describe("handleScoreChapter", () => {
   beforeEach(async () => {
     _resetHandlers();
     await db.apiUsage.deleteMany();
-    await db.suggestion.deleteMany();
+    await db.pexelsCache.deleteMany();
+    await db.asset.deleteMany();
     await db.render.deleteMany();
     await db.script.deleteMany();
+    await db.suggestion.deleteMany();
     await db.idea.deleteMany();
     await db.trendSnapshot.deleteMany();
     await db.chapter.deleteMany();
