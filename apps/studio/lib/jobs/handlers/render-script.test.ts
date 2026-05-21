@@ -567,7 +567,7 @@ describe("handleRenderScript with background music (Setting enable_music=true)",
     await runJob(job.id);
 
     expect(mixAudio).toHaveBeenCalledTimes(1);
-    const callArg = mixAudio.mock.calls[0]![0] as { musicPath: string; gainDb: number };
+    const callArg = mixAudio.mock.calls[0]![0] as unknown as { musicPath: string; gainDb: number };
     expect(callArg.musicPath).toBe("/music/urgent_pulse.mp3");
     expect(callArg.gainDb).toBe(-18);
 
