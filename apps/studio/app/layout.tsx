@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="flex items-center gap-1 text-sm">
               <Link href="/" className="font-semibold mr-2">Studio</Link>
               <NavLink href="/books" label="Books" />
-              <NavLink href="/renders" label="Renders" />
+              <NavLink href="/renders" label="Videos" />
               <NavLink href="/settings" label="Settings" />
               <NavLink href="/admin/logs" label="Logs" />
             </nav>

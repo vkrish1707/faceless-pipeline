@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ScriptCard, type ScriptCardData } from "./ScriptCard";
 import { RenderAllButton } from "./RenderAllButton";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { BackButton } from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -85,14 +86,17 @@ export default async function ScriptsReviewPage({ params }: { params: Promise<{ 
 
   return (
     <main className="max-w-6xl mx-auto p-8 space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Books", href: "/books" },
-          { label: chapter.book.title, href: `/books/${id}` },
-          { label: chapter.title, href: `/books/${id}/chapters/${cid}` },
-          { label: "Scripts" },
-        ]}
-      />
+      <div className="flex items-center gap-3">
+        <BackButton fallbackHref={`/books/${id}/chapters/${cid}`} />
+        <Breadcrumbs
+          items={[
+            { label: "Books", href: "/books" },
+            { label: chapter.book.title, href: `/books/${id}` },
+            { label: chapter.title, href: `/books/${id}/chapters/${cid}` },
+            { label: "Scripts" },
+          ]}
+        />
+      </div>
       <header className="space-y-2">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-3xl font-bold">Scripts</h1>

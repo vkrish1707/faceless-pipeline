@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ChapterEditor } from "./ChapterEditor";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { BackButton } from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,10 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="max-w-4xl mx-auto p-8 space-y-6">
-      <Breadcrumbs items={[{ label: "Books", href: "/books" }, { label: book.title }]} />
+      <div className="flex items-center gap-3">
+        <BackButton fallbackHref="/books" />
+        <Breadcrumbs items={[{ label: "Books", href: "/books" }, { label: book.title }]} />
+      </div>
       <header>
         <h1 className="text-3xl font-bold">{book.title}</h1>
         <p className="text-muted-foreground mt-1">

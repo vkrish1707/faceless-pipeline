@@ -5,6 +5,7 @@ import { ScoreButton } from "./ScoreButton";
 import { SuggestionStrip, type SuggestionRow } from "./SuggestionStrip";
 import { IdeaGrid, type IdeaRow } from "./IdeaGrid";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { BackButton } from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -75,13 +76,16 @@ export default async function ChapterIdeasPage({ params }: { params: Promise<{ i
 
   return (
     <main className="max-w-5xl mx-auto p-8 space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Books", href: "/books" },
-          { label: chapter.book.title, href: `/books/${id}` },
-          { label: chapter.title },
-        ]}
-      />
+      <div className="flex items-center gap-3">
+        <BackButton fallbackHref={`/books/${id}`} />
+        <Breadcrumbs
+          items={[
+            { label: "Books", href: "/books" },
+            { label: chapter.book.title, href: `/books/${id}` },
+            { label: chapter.title },
+          ]}
+        />
+      </div>
       <header className="space-y-2">
         <div className="flex items-start justify-between gap-4">
           <div>
